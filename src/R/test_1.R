@@ -17,11 +17,20 @@ ALOOM <- function(train.x,train.y,test.x,
                                 paste(libraryNames, collapse = ", ")),
                              call. = FALSE)
 
+    if(names(method$library)=="rf" && (! names(method$parameters) %in% c("ntree"))) 
+    {
+      stop("method$library=rf should have a list method$parameters with ntree name",
+      call. = FALSE)
+    }
+
   } else stop("method is expected to be a list", call. = FALSE) 
     
 
   mnAllPredictions   <- matrix(nrow=nrow(test.x),ncol=nrow(train.x))
   mnAllProbabilities <- matrix(nrow=nrow(test.x),ncol=nrow(train.x))
+
+  rownames(mnAllProbabilities) <- rownames(test.x)
+  colnames(mnAllProbabilities) <- paste0("without_",rownames(train.x))
 
   for (i in 1:nrow(train.x))
   {
@@ -30,7 +39,8 @@ ALOOM <- function(train.x,train.y,test.x,
 
     if (method$library=="rf")
     {
-      fit.RF.L <- randomForest(x,y,ntree=1000)
+      suppressPackageStartupMessages(library(randomForest))
+      fit.RF.L <- randomForest(x,y,ntree=method$parameters$ntree)
 
       predictedY            <- as.vector(predict(fit.RF.L,test.x,type="response"))
       predictedProbs        <- predict(fit.RF.L,test.x,type="prob")
@@ -57,11 +67,11 @@ ALOOM <- function(train.x,train.y,test.x,
   aloomMin    <- apply(mnAllProbabilities,1,min)
   aloomMax    <- apply(mnAllProbabilities,1,max)
 
-  list(predicted.y=predictedNA.Y, aloom.mean=aloomMean, aloom.median=aloomMedian, aloom.min=aloomMin, aloom.max=aloomMax)
+  list(predicted.y=predictedNA.Y, all.predicted.probabilities=mnAllProbabilities,
+       aloom.mean=aloomMean, aloom.median=aloomMedian, aloom.min=aloomMin, aloom.max=aloomMax)
 }
 
 suppressPackageStartupMessages(library(QSARdata))
-suppressPackageStartupMessages(library(randomForest))
 suppressPackageStartupMessages(library(caret))
 
 data(bbb2)
@@ -79,12 +89,17 @@ pfLearningY   <- bbb2_Outcome[-lvFolds[[1]],2]
 
 lvALOOM <- ALOOM(mnLearningX,pfLearningY,mnValidationX)
 
-data        <- data.frame(id=rownames(mnValidationX),
-                          aloom.prediction=lvALOOM$predicted.y,
-                          aloom.min=lvALOOM$aloom.min,
-                          aloom.mean=lvALOOM$aloom.mean,
-                          aloom.max=lvALOOM$aloom.max)
-filename1   <- "~/predicted_na_rf_all.csv"
-write.csv(data,file=filename1,row.names=F,quote=F)
-pcLine <- paste("\nPredictions are stored in the file ",filename1,"\n\n")
+data1 <- data.frame(id=rownames(mnValidationX),
+                    aloom.prediction=lvALOOM$predicted.y,
+                    aloom.min=lvALOOM$aloom.min,
+                    aloom.mean=lvALOOM$aloom.mean,
+                    aloom.max=lvALOOM$aloom.max)
+
+data2 <- data.frame(id=rownames(mnValidationX),lvALOOM$all.predicted.probabilities)
+
+filename1 <- "~/predicted_na_rf_all.csv"
+write.csv(data1,file=filename1,row.names=F,quote=F)
+filename2 <- "~/all_predicted_probs.csv"
+write.csv(data2,file=filename2,row.names=F,quote=F)
+pcLine <- paste("\nPredictions are stored in the files ",filename1,filename2,"\n\n")
 cat(pcLine)
