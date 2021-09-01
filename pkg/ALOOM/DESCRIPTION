@@ -12,9 +12,10 @@ BugReports: https://github.com/damjankrstajic/ALOOM/issues
 Imports:
     methods,
     utils,
+    tools
 Suggests:
     randomForest,
-    glmnet,
+    glmnet
 License: GPL (>= 2)
 VignetteBuilder: knitr
 Encoding: UTF-8
