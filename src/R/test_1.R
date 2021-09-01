@@ -1,7 +1,24 @@
 #!/usr/bin/Rscript
 
-ALOOM <- function(train.x,train.y,test.x)
+ALOOM <- function(train.x,train.y,test.x,
+                  method=list(library="rf",parameters=list(ntree=1000)))
 {
+
+  if(is.list(method)) 
+  {
+    methodNames  <- c("library", "parameters") 
+    libraryNames <- c("rf","glmnet") 
+    nameCheck <- methodNames %in% names(method) 
+    if(!all(nameCheck)) stop(paste("some required components are missing:",
+                                   paste(methodNames[!nameCheck], collapse = ", ")),
+                             call. = FALSE)
+    libraryCheck <- method$library %in% libraryNames
+    if(!all(libraryCheck)) stop(paste("method$library ", method$library, " is not in:",
+                                paste(libraryNames, collapse = ", ")),
+                             call. = FALSE)
+
+  } else stop("method is expected to be a list", call. = FALSE) 
+    
 
   mnAllPredictions   <- matrix(nrow=nrow(test.x),ncol=nrow(train.x))
   mnAllProbabilities <- matrix(nrow=nrow(test.x),ncol=nrow(train.x))
@@ -10,15 +27,19 @@ ALOOM <- function(train.x,train.y,test.x)
   {
     x <- train.x[-i,]
     y <- train.y[-i]
-    fit.RF.L <- randomForest(x,y,ntree=1000)
 
-    predictedY            <- as.vector(predict(fit.RF.L,test.x,type="response"))
-    predictedProbs        <- predict(fit.RF.L,test.x,type="prob")
-    predictedProbabilityY <- predictedProbs[,2]
+    if (method$library=="rf")
+    {
+      fit.RF.L <- randomForest(x,y,ntree=1000)
 
-    mnAllPredictions[,i]   <- predictedY
-    mnAllProbabilities[,i] <- predictedProbabilityY
-    cat(i)
+      predictedY            <- as.vector(predict(fit.RF.L,test.x,type="response"))
+      predictedProbs        <- predict(fit.RF.L,test.x,type="prob")
+      predictedProbabilityY <- predictedProbs[,2]
+
+      mnAllPredictions[,i]   <- predictedY
+      mnAllProbabilities[,i] <- predictedProbabilityY
+      cat(i)
+    }
   }
 
   predictedNA.Y <- predictedY
@@ -63,7 +84,7 @@ data        <- data.frame(id=rownames(mnValidationX),
                           aloom.min=lvALOOM$aloom.min,
                           aloom.mean=lvALOOM$aloom.mean,
                           aloom.max=lvALOOM$aloom.max)
-filename1   <- "predicted_na_rf_all.csv"
+filename1   <- "~/predicted_na_rf_all.csv"
 write.csv(data,file=filename1,row.names=F,quote=F)
 pcLine <- paste("\nPredictions are stored in the file ",filename1,"\n\n")
 cat(pcLine)
