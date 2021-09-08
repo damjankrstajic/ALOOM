@@ -25,6 +25,25 @@ check.ALOOM.method <- function(a.method)
 
 }
 
+original <- function(train.x,train.y,test.x,
+                     method=list(library="rf",parameters=list(ntree=1000)))
+{
+
+  check.ALOOM.method(method)  
+
+  if (method$library=="rf")
+  {
+    suppressPackageStartupMessages(library(randomForest))
+    fit.RF.L <- randomForest(train.x,train.y,ntree=method$parameters$ntree)
+
+    predictedY            <- as.vector(predict(fit.RF.L,test.x,type="response"))
+    predictedProbs        <- predict(fit.RF.L,test.x,type="prob")
+    predictedProbabilityY <- predictedProbs[,2]
+  }
+
+  list(predicted.y=predictedY, predicted.probs=predictedProbabilityY)
+}
+
 ALOOM <- function(train.x,train.y,test.x,
                   method=list(library="rf",parameters=list(ntree=1000)))
 {
@@ -92,9 +111,12 @@ mnValidationX <- bbb2_Dragon[lvFolds[[1]],-1]
 pfLearningY   <- bbb2_Outcome[-lvFolds[[1]],2]
 #pfValidationY <- bbb2_Outcome[lvFolds[[1]],2]
 
-lvALOOM <- ALOOM(mnLearningX,pfLearningY,mnValidationX)
+lvOriginal <- original(mnLearningX,pfLearningY,mnValidationX)
+lvALOOM    <- ALOOM(mnLearningX,pfLearningY,mnValidationX)
 
 data1 <- data.frame(id=rownames(mnValidationX),
+                    original.prediction=lvOriginal$predicted.y,
+                    original.prediction.probs=lvOriginal$predicted.probs,
                     aloom.prediction=lvALOOM$predicted.y,
                     aloom.min=lvALOOM$aloom.min,
                     aloom.mean=lvALOOM$aloom.mean,
