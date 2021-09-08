@@ -34,6 +34,7 @@ original <- function(train.x,train.y,test.x,
   if (method$library=="rf")
   {
     suppressPackageStartupMessages(library(randomForest))
+    set.seed(1)
     fit.RF.L <- randomForest(train.x,train.y,ntree=method$parameters$ntree)
 
     predictedY            <- as.vector(predict(fit.RF.L,test.x,type="response"))
@@ -64,6 +65,7 @@ ALOOM <- function(train.x,train.y,test.x,
     if (method$library=="rf")
     {
       suppressPackageStartupMessages(library(randomForest))
+      set.seed(1)
       fit.RF.L <- randomForest(x,y,ntree=method$parameters$ntree)
 
       predictedY            <- as.vector(predict(fit.RF.L,test.x,type="response"))
