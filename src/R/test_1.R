@@ -1,30 +1,35 @@
 #!/usr/bin/Rscript
 
-ALOOM <- function(train.x,train.y,test.x,
-                  method=list(library="rf",parameters=list(ntree=1000)))
+check.ALOOM.method <- function(a.method)
 {
-
-  if(is.list(method)) 
+  if(is.list(a.method)) 
   {
     methodNames  <- c("library", "parameters") 
     libraryNames <- c("rf","glmnet") 
-    nameCheck <- methodNames %in% names(method) 
+    nameCheck <- methodNames %in% names(a.method) 
     if(!all(nameCheck)) stop(paste("some required components are missing:",
                                    paste(methodNames[!nameCheck], collapse = ", ")),
                              call. = FALSE)
-    libraryCheck <- method$library %in% libraryNames
-    if(!all(libraryCheck)) stop(paste("method$library ", method$library, " is not in:",
+    libraryCheck <- a.method$library %in% libraryNames
+    if(!all(libraryCheck)) stop(paste("method$library ", a.method$library, " is not in:",
                                 paste(libraryNames, collapse = ", ")),
                              call. = FALSE)
 
-    if(names(method$library)=="rf" && (! names(method$parameters) %in% c("ntree"))) 
+    if(names(a.method$library)=="rf" && (! names(a.method$parameters) %in% c("ntree"))) 
     {
       stop("method$library=rf should have a list method$parameters with ntree name",
       call. = FALSE)
     }
 
   } else stop("method is expected to be a list", call. = FALSE) 
-    
+
+}
+
+ALOOM <- function(train.x,train.y,test.x,
+                  method=list(library="rf",parameters=list(ntree=1000)))
+{
+
+  check.ALOOM.method(method)  
 
   mnAllPredictions   <- matrix(nrow=nrow(test.x),ncol=nrow(train.x))
   mnAllProbabilities <- matrix(nrow=nrow(test.x),ncol=nrow(train.x))
