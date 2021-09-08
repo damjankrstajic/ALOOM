@@ -39,7 +39,7 @@ original <- function(train.x,train.y,test.x,
   if (method$library=="rf")
   {
     suppressPackageStartupMessages(library(randomForest))
-    set.seed(1)
+    if ("seed.number" %in% names(method)) set.seed(method$seed.number)
     fit.RF.L <- randomForest(train.x,train.y,ntree=method$parameters$ntree)
 
     predictedY            <- as.vector(predict(fit.RF.L,test.x,type="response"))
@@ -49,7 +49,7 @@ original <- function(train.x,train.y,test.x,
   } else if (method$library=="glmnet")
   {
     suppressPackageStartupMessages(library(glmnet))
-    set.seed(1)
+    if ("seed.number" %in% names(method)) set.seed(method$seed.number)
     fit.glmnet.L <- glmnet(train.x, train.y, family="binomial",
                            lambda=method$parameters$lambda, alpha=method$parameters$alpha)
 
@@ -83,7 +83,7 @@ ALOOM <- function(train.x,train.y,test.x,
     if (method$library=="rf")
     {
       suppressPackageStartupMessages(library(randomForest))
-      set.seed(1)
+      if ("seed.number" %in% names(method)) set.seed(method$seed.number)
       fit.RF.L <- randomForest(x,y,ntree=method$parameters$ntree)
 
       predictedY            <- as.vector(predict(fit.RF.L,test.x,type="response"))
@@ -97,7 +97,7 @@ ALOOM <- function(train.x,train.y,test.x,
     } else if (method$library=="glmnet")
     {
       suppressPackageStartupMessages(library(glmnet))
-      set.seed(1)
+      if ("seed.number" %in% names(method)) set.seed(method$seed.number)
       fit.glmnet.L <- glmnet(x, y, family="binomial",
                              lambda=method$parameters$lambda, alpha=method$parameters$alpha)
 
@@ -136,8 +136,8 @@ ALOOM <- function(train.x,train.y,test.x,
 suppressPackageStartupMessages(library(QSARdata))
 suppressPackageStartupMessages(library(caret))
 
-method <- list(library="glmnet", parameters=list(alpha=0,lambda=1))
-#method <- list(library="rf", parameters=list(ntree=1000))
+method <- list(library="glmnet", parameters=list(alpha=0,lambda=1), seed.number=1)
+#method <- list(library="rf", parameters=list(ntree=1000), seed.number=1)
 
 data(bbb2)
 
@@ -145,7 +145,7 @@ row.has.na <- apply(bbb2_Dragon, 1, function(x){any(is.na(x))})
 bbb2_Dragon <- bbb2_Dragon[!row.has.na,]
 bbb2_Outcome <- bbb2_Outcome[!row.has.na,]
 
-set.seed(1)
+if ("seed.number" %in% names(method)) set.seed(method$seed.number)
 lvFolds <- createFolds(bbb2_Outcome[,2],k=2)
 mnLearningX   <- as.matrix(bbb2_Dragon[-lvFolds[[1]],-1])
 mnValidationX <- as.matrix(bbb2_Dragon[lvFolds[[1]],-1])
