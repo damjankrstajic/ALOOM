@@ -15,9 +15,15 @@ check.ALOOM.method <- function(a.method)
                                 paste(libraryNames, collapse = ", ")),
                              call. = FALSE)
 
-    if(names(a.method$library)=="rf" && (! names(a.method$parameters) %in% c("ntree"))) 
+    if(a.method$library=="rf" && (! names(a.method$parameters) %in% c("ntree"))) 
     {
       stop("method$library=rf should have a list method$parameters with ntree name",
+      call. = FALSE)
+    }
+
+    if(a.method$library=="glmnet" && (! names(a.method$parameters) %in% c("alpha","lambda"))) 
+    {
+      stop("method$library=glmnet should have a list method$parameters with alpha and lambda",
       call. = FALSE)
     }
 
@@ -40,6 +46,9 @@ original <- function(train.x,train.y,test.x,
     predictedY            <- as.vector(predict(fit.RF.L,test.x,type="response"))
     predictedProbs        <- predict(fit.RF.L,test.x,type="prob")
     predictedProbabilityY <- predictedProbs[,2]
+  } else
+  {
+    stop(paste("check.ALOOM.method does not support",method$library), call.=FALSE)
   }
 
   list(predicted.y=predictedY, predicted.probs=predictedProbabilityY)
@@ -100,6 +109,9 @@ ALOOM <- function(train.x,train.y,test.x,
 suppressPackageStartupMessages(library(QSARdata))
 suppressPackageStartupMessages(library(caret))
 
+method <- list(library="glmnet", parameters=list(alpha=0,lambda=1))
+method <- list(library="rf", parameters=list(ntree=1000))
+
 data(bbb2)
 
 row.has.na <- apply(bbb2_Dragon, 1, function(x){any(is.na(x))})
@@ -113,8 +125,8 @@ mnValidationX <- bbb2_Dragon[lvFolds[[1]],-1]
 pfLearningY   <- bbb2_Outcome[-lvFolds[[1]],2]
 #pfValidationY <- bbb2_Outcome[lvFolds[[1]],2]
 
-lvOriginal <- original(mnLearningX,pfLearningY,mnValidationX)
-lvALOOM    <- ALOOM(mnLearningX,pfLearningY,mnValidationX)
+lvOriginal <- original(mnLearningX,pfLearningY,mnValidationX, method=method)
+lvALOOM    <- ALOOM(mnLearningX,pfLearningY,mnValidationX, method=method)
 
 data1 <- data.frame(id=rownames(mnValidationX),
                     original.prediction=lvOriginal$predicted.y,
