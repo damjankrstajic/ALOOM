@@ -34,7 +34,6 @@ check.ALOOM.method <- function(a.method)
 original <- function(train.x,train.y,test.x,
                      method=list(library="rf",parameters=list(ntree=1000)))
 {
-
   check.ALOOM.method(method)  
 
   if (method$library=="rf")
@@ -46,9 +45,20 @@ original <- function(train.x,train.y,test.x,
     predictedY            <- as.vector(predict(fit.RF.L,test.x,type="response"))
     predictedProbs        <- predict(fit.RF.L,test.x,type="prob")
     predictedProbabilityY <- predictedProbs[,2]
+
+  } else if (method$library=="glmnet")
+  {
+    suppressPackageStartupMessages(library(glmnet))
+    set.seed(1)
+    fit.glmnet.L <- glmnet(train.x, train.y, family="binomial",
+                           lambda=method$parameters$lambda, alpha=method$parameters$alpha)
+
+    predictedY            <- as.vector(predict(fit.glmnet.L,test.x,type="class"))
+    predictedProbabilityY <- as.vector(predict(fit.glmnet.L,test.x,type="response"))
+
   } else
   {
-    stop(paste("check.ALOOM.method does not support",method$library), call.=FALSE)
+    stop(paste("original() does not support",method$library), call.=FALSE)
   }
 
   list(predicted.y=predictedY, predicted.probs=predictedProbabilityY)
@@ -57,7 +67,6 @@ original <- function(train.x,train.y,test.x,
 ALOOM <- function(train.x,train.y,test.x,
                   method=list(library="rf",parameters=list(ntree=1000)))
 {
-
   check.ALOOM.method(method)  
 
   mnAllPredictions   <- matrix(nrow=nrow(test.x),ncol=nrow(train.x))
@@ -78,12 +87,30 @@ ALOOM <- function(train.x,train.y,test.x,
       fit.RF.L <- randomForest(x,y,ntree=method$parameters$ntree)
 
       predictedY            <- as.vector(predict(fit.RF.L,test.x,type="response"))
-      predictedProbs        <- predict(fit.RF.L,test.x,type="prob")
+      predictedProbs        <- as.vector(predict(fit.RF.L,test.x,type="prob"))
       predictedProbabilityY <- predictedProbs[,2]
 
       mnAllPredictions[,i]   <- predictedY
       mnAllProbabilities[,i] <- predictedProbabilityY
       cat(i)
+
+    } else if (method$library=="glmnet")
+    {
+      suppressPackageStartupMessages(library(glmnet))
+      set.seed(1)
+      fit.glmnet.L <- glmnet(x, y, family="binomial",
+                             lambda=method$parameters$lambda, alpha=method$parameters$alpha)
+
+      predictedY            <- as.vector(predict(fit.glmnet.L,test.x,type="class"))
+      predictedProbabilityY <- as.vector(predict(fit.glmnet.L,test.x,type="response"))
+
+      mnAllPredictions[,i]   <- predictedY
+      mnAllProbabilities[,i] <- predictedProbabilityY
+      cat(i)
+
+    } else
+    {
+      stop(paste("ALOOM() does not support",method$library), call.=FALSE)
     }
   }
 
@@ -110,7 +137,7 @@ suppressPackageStartupMessages(library(QSARdata))
 suppressPackageStartupMessages(library(caret))
 
 method <- list(library="glmnet", parameters=list(alpha=0,lambda=1))
-method <- list(library="rf", parameters=list(ntree=1000))
+#method <- list(library="rf", parameters=list(ntree=1000))
 
 data(bbb2)
 
@@ -120,8 +147,8 @@ bbb2_Outcome <- bbb2_Outcome[!row.has.na,]
 
 set.seed(1)
 lvFolds <- createFolds(bbb2_Outcome[,2],k=2)
-mnLearningX   <- bbb2_Dragon[-lvFolds[[1]],-1]
-mnValidationX <- bbb2_Dragon[lvFolds[[1]],-1]
+mnLearningX   <- as.matrix(bbb2_Dragon[-lvFolds[[1]],-1])
+mnValidationX <- as.matrix(bbb2_Dragon[lvFolds[[1]],-1])
 pfLearningY   <- bbb2_Outcome[-lvFolds[[1]],2]
 #pfValidationY <- bbb2_Outcome[lvFolds[[1]],2]
 
@@ -138,9 +165,9 @@ data1 <- data.frame(id=rownames(mnValidationX),
 
 data2 <- data.frame(id=rownames(mnValidationX),lvALOOM$all.predicted.probabilities)
 
-filename1 <- "~/predicted_na_rf_all.csv"
+filename1 <- paste0("~/predicted_na_",method$library,"_all.csv")
 write.csv(data1,file=filename1,row.names=F,quote=F)
-filename2 <- "~/all_predicted_probs.csv"
+filename2 <- paste0("~/all_predicted_",method$library,"_probs.csv")
 write.csv(data2,file=filename2,row.names=F,quote=F)
 pcLine <- paste("\nPredictions are stored in the files ",filename1,filename2,"\n\n")
 cat(pcLine)
