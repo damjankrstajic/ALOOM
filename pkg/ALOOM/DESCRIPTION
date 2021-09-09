@@ -4,6 +4,7 @@ Date: 2021-09-09
 Title: All Leave One Out Models
 Authors@R: c(person("Damjan", "Krstajic", role = c("aut", "cre"), email = "Damjan.Krstajic@rcc.org.rs"))
 Depends: R (>= 3.0.0), randomForest, glmnet
+Suggests: QSARdata, caret 
 Description: Misc functions for the ALOOM approach. 
 License: GPL (>= 2)
 URL: https://github.com/damjankrstajic/ALOOM/
